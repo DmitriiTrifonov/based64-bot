@@ -35,7 +35,7 @@ func main() {
 		"It converts Images to Base64 strings and vice versa\n" +
 		"Send a photo to start"
 
-	errorMessage := "Cannot process the Image"
+	errorMessage := "Cannot process the data"
 
 	b.Handle("/start", func(m *tb.Message) {
 		_, _ = b.Send(m.Sender, message)
@@ -62,24 +62,43 @@ func main() {
 			_, _ = b.Send(m.Sender, errorMessage)
 			return
 		}
-		bytes, err := ioutil.ReadAll(resp.Body)
+		bts, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			_, _ = b.Send(m.Sender, errorMessage)
 			return
 		}
-		enc := base64.StdEncoding.EncodeToString(bytes)
-		log.Println(enc)
+		enc := base64.StdEncoding.EncodeToString(bts)
 		rand.Seed(time.Now().UnixNano())
 		n := rand.Intn(1000)
 		s := strconv.Itoa(n)
 		file, err := os.Create(s + ".txt")
 		if file != nil {
 			_, err = file.Write([]byte(enc))
+			log.Println("File", s+".txt", "has been created")
 			err = file.Close()
 		}
 		p := &tb.Document{File: tb.FromDisk(s + ".txt"), FileName: "base64.txt"}
 		_, _ = b.Send(m.Sender, p)
 		err = os.Remove(s + ".txt")
+		log.Println("File", s+".txt", "has been removed")
+	})
+
+	b.Handle(tb.OnDocument, func(m *tb.Message) {
+		docId := m.Document.FileID
+		url, err := b.FileURLByID(docId)
+		if err != nil {
+			_, _ = b.Send(m.Sender, errorMessage)
+			return
+		}
+		log.Println(url)
+		doc, err := http.Get(url)
+		if err != nil {
+			_, _ = b.Send(m.Sender, errorMessage)
+			return
+		}
+		bts, err := ioutil.ReadAll(doc.Body)
+		contentType := http.DetectContentType(bts)
+		log.Println(contentType)
 	})
 
 	b.Start()
