@@ -99,6 +99,29 @@ func main() {
 		bts, err := ioutil.ReadAll(doc.Body)
 		contentType := http.DetectContentType(bts)
 		log.Println(contentType)
+		if contentType != "text/plain; charset=utf-8" {
+			_, _ = b.Send(m.Sender, errorMessage)
+			return
+		} else {
+			dec, err := base64.StdEncoding.DecodeString(string(bts))
+			if err != nil {
+				_, _ = b.Send(m.Sender, errorMessage)
+				return
+			}
+			rand.Seed(time.Now().UnixNano())
+			n := rand.Intn(1000)
+			s := strconv.Itoa(n)
+			file, err := os.Create(s + ".jpg")
+			if file != nil {
+				_, err = file.Write(dec)
+				log.Println("File", s+".jpg", "has been created")
+				err = file.Close()
+			}
+			p := &tb.Photo{File: tb.FromDisk(s + ".jpg")}
+			_, _ = b.Send(m.Sender, p)
+			err = os.Remove(s + ".jpg")
+			log.Println("File", s+".jpg", "has been removed")
+		}
 	})
 
 	b.Start()
