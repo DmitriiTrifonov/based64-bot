@@ -79,6 +79,7 @@ func main() {
 		}
 		p := &tb.Document{File: tb.FromDisk(s + ".txt"), FileName: "base64.txt"}
 		_, _ = b.Send(m.Sender, p)
+		err = os.Remove(s + ".txt")
 	})
 
 	b.Start()
