@@ -66,4 +66,6 @@ func main() {
 		log.Println(enc)
 		_, _ = b.Send(m.Sender, enc)
 	})
+
+	b.Start()
 }
